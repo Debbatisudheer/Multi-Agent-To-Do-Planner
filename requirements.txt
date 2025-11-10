@@ -18,3 +18,4 @@ streamlit
 # ==== Optional but useful ====
 rich
 pydantic
+websocket-client
