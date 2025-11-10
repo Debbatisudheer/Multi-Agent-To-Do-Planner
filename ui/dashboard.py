@@ -6,7 +6,7 @@ import websocket
 import threading
 import json
 
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "https://multi-agent-to-do-planner.onrender.com"
 
 st.set_page_config(page_title="Multi-Agent Task Planner", page_icon="🤖")
 st.title("🤖 Multi-Agent Task Planner")
