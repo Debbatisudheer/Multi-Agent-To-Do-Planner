@@ -57,7 +57,8 @@ output_box = st.empty()
 # ----------------------------------------------------
 def ws_listener():
     ws = websocket.WebSocket()
-    ws.connect("ws://localhost:8000/ws")
+    ws.connect("wss://multi-agent-to-do-planner.onrender.com/ws")
+
 
     while True:
         message = ws.recv()
