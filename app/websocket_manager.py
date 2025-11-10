@@ -16,12 +16,12 @@ class WebSocketManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        """Send log messages to all WebSocket clients asynchronously"""
-        for connection in list(self.active_connections):
+        """Send log message to all websocket clients."""
+        for connection in self.active_connections:
             try:
-                await connection.send_text(message)   # ✅ FIX: added await
+                await connection.send_text(message)
             except:
-                self.disconnect(connection)
+                pass
 
-# ✅ exported instance
+# instance used by agent & server
 websocket_manager = WebSocketManager()
