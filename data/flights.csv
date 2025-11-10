@@ -1,0 +1,4 @@
+origin,dest,date,depart,arrive,airline,price
+HYD,BLR,2025-11-25,08:30,09:40,IndiGo,3200
+HYD,BLR,2025-11-25,18:15,19:25,Air India,3500
+BLR,DEL,2025-11-26,07:40,10:10,Vistara,7800
