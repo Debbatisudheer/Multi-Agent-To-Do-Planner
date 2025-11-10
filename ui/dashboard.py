@@ -6,19 +6,27 @@ import websocket
 import threading
 import json
 
-BACKEND_URL = "https://multi-agent-to-do-planner.onrender.com"
+# ⚠️ Change this when running locally (localhost:8000)
+# BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "https://multi-agent-to-do-planner.onrender.com"  # Render backend URL
+
 
 st.set_page_config(page_title="Multi-Agent Task Planner", page_icon="🤖")
 st.title("🤖 Multi-Agent Task Planner")
 
+
 # ----------------------------------------------------
 # ✅ Detect Online / Offline Mode
 # ----------------------------------------------------
-try:
-    status = requests.get(f"{BACKEND_URL}/status").json()
-    is_online = status["mode"] == "online"
-except Exception:
-    is_online = False
+def check_status():
+    try:
+        status = requests.get(f"{BACKEND_URL}/status", timeout=5).json()
+        return status["mode"] == "online"
+    except Exception:
+        return False
+
+
+is_online = check_status()
 
 if is_online:
     st.markdown(
@@ -32,6 +40,7 @@ else:
         "🔌 Offline Mode (No GPT Key)</div>",
         unsafe_allow_html=True,
     )
+
 
 st.write("""
 💡 **What can I do?**
@@ -47,31 +56,37 @@ st.write("""
 
 goal = st.text_input("🔽 Type your goal")
 
-# ✅ Space for timeline and final output
+
+# ----------------------------------------------------
+# ✅ UI Containers for Progress + Final Output
+# ----------------------------------------------------
 timeline = st.container()
 output_box = st.empty()
 
 
 # ----------------------------------------------------
-# ✅ WebSocket Listener (Fixed JSON decode issue)
+# ✅ WebSocket Listener
 # ----------------------------------------------------
 def ws_listener():
-    ws = websocket.WebSocket()
-    ws.connect("wss://multi-agent-to-do-planner.onrender.com/ws")
+    try:
+        ws = websocket.WebSocket()
+        ws.connect("wss://multi-agent-to-do-planner.onrender.com/ws/")  # ✅ notice the '/' at the end
+        # ws.connect("ws://localhost:8000/ws/")  # use this when testing locally
 
+        while True:
+            message = ws.recv()
 
-    while True:
-        message = ws.recv()
+            # Backend sends plain text, so handle both formats
+            try:
+                data = json.loads(message)
+                log = data.get("log", message)
+            except json.JSONDecodeError:
+                log = message
 
-        # Try to parse JSON (backend sends plain text)
-        try:
-            data = json.loads(message)
-            log = data.get("log", message)
-        except:
-            log = message  # fallback to plain text
+            timeline.write(f"🔹 {log}")
 
-        # update live logs on UI
-        timeline.write(f"🔹 {log}")
+    except Exception as e:
+        timeline.write(f"❌ WebSocket error: {e}")
 
 
 # ----------------------------------------------------
@@ -79,19 +94,22 @@ def ws_listener():
 # ----------------------------------------------------
 if st.button("Run Agent"):
 
-    # Start websocket listener in background
+    # Start websocket listener thread
     thread = threading.Thread(target=ws_listener, daemon=True)
     thread.start()
 
     timeline.write("⚙️ Starting agent...")
 
-    # POST call to backend
-    response = requests.post(
-        f"{BACKEND_URL}/run-agent",
-        json={"goal": goal}
-    ).json()
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/run-agent",
+            json={"goal": goal},
+            timeout=30
+        ).json()
 
-    # Display final result
-    output_box.success("✅ Completed!")
-    st.subheader("🧠 Final Result")
-    st.write(response["final"])
+        output_box.success("✅ Completed!")
+        st.subheader("🧠 Final Result:")
+        st.write(response.get("final", "No final result received."))
+
+    except Exception as e:
+        output_box.error(f"❌ Error communicating with backend: {e}")
